@@ -1,2 +1,3 @@
-# mixed-context-prediction
-Can context compliance in LLMs be predicted?
+# Headline
+
+## What is the interplay between REASONING COMPLEXITY and SEMANTIC/COMMONSENSE FACTUALITY?
