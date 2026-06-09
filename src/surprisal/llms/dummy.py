@@ -59,7 +59,6 @@ class DummyLLM(LLM):
         elif not add_logprobs and add_prompt_logprobs:
             full_text = prompt_data.messages[1].text + "\n" + text
             data["prompt_logprobs"] = self._fake_logprobs(full_text)
-            quit()
         else:
             pass  # Add nothing.
         return LLMOutput(generated_text=text, error_message=message, derived_data=data)
