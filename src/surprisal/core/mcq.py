@@ -1,0 +1,2 @@
+AnswerLabel = str
+AnswerTerm = str

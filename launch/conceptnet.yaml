@@ -1,0 +1,29 @@
+# General.
+verbose: true
+llms:
+  - dummy
+
+# Preprocess.
+factual_variant_id: factual
+subsampling_per_relation: 200
+preprocess_nf_threshold: 5
+preprocess_seed: 42
+relation_type: AtLocation
+
+# Inference.
+inference_variant_id: factual
+prompt_batch_size: 10
+checkpoint_frequency: 300.0
+chosen_only_logprob: true
+
+# Postprocess.
+collate_variants:
+  - factual
+  - random
+  - controlled
+
+# Analysis.
+aggregators:
+  - SUM
+  - MIN
+flip_logprobs: true

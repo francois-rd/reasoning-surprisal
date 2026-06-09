@@ -1,0 +1,4 @@
+templates:
+  cnet_simple:
+    template:  "Is the following relationship true or false?\n\n{data}\nAnswer:"
+    indicator: Is the following relationship true or false?

@@ -1,0 +1,25 @@
+features:
+  no_ling:
+    pos: false
+    tag: false
+    dep: false
+    full_morph: false
+    children: false
+  pos_only:
+    pos: true
+    tag: false
+    dep: false
+    full_morph: false
+    children: false
+  all_no_children:
+    pos: true
+    tag: true
+    dep: true
+    full_morph: true
+    children: false
+  all_with_children:
+    pos: true
+    tag: true
+    dep: true
+    full_morph: true
+    children: true

@@ -1,0 +1,12 @@
+rankers:
+  no_ranker:
+    method: NOOP
+  random:
+    method: RANDOM
+    data:
+      seed: 42
+  cnet_pos:
+    method: CNET_HIERARCHY
+    data:
+      pos: true
+      seed: 42

@@ -1,0 +1,19 @@
+variants:
+  factual:
+    ranker_id: no_ranker
+    linguistics_id: no_ling
+    system_prompt_id: cnet_simple
+    user_template_id: cnet_simple
+    parser_id: true_false
+  random:
+    ranker_id: random
+    linguistics_id: no_ling
+    system_prompt_id: cnet_simple
+    user_template_id: cnet_simple
+    parser_id: true_false
+  controlled:
+    ranker_id: cnet_pos
+    linguistics_id: all_no_children
+    system_prompt_id: cnet_simple
+    user_template_id: cnet_simple
+    parser_id: true_false

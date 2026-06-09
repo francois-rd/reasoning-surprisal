@@ -1,0 +1,176 @@
+prompts:
+  cnet_simple:
+    zero_shot: >-
+      You are a helpful assistant in a knowledge verification process. Your task is to
+      determine whether a query expresses a relationship that is generally considered
+      TRUE or FALSE in the real world. The relationship query is a sentence in the form:
+      
+          "Suppose that [SOURCE-CONCEPT] RELATION-TYPE [TARGET-CONCEPT]"
+      
+      and the options for the RELATION-TYPE are:
+      
+          1. "appears near" - Whether the SOURCE-CONCEPT exists at the location of the TARGET-CONCEPT.
+      
+          2. "causes" - Whether the SOURCE-CONCEPT causes the TARGET-CONCEPT.
+      
+          3. "part of" - Whether the SOURCE-CONCEPT is a component part of the TARGET-CONCEPT.
+      
+          4. "type of" - Whether the SOURCE-CONCEPT is a type of the TARGET-CONCEPT.
+      
+          5. "used for" - Whether the SOURCE-CONCEPT is used for or used by the TARGET-CONCEPT.
+      
+          6. "prerequisite" - Whether the SOURCE-CONCEPT has the TARGET-CONCEPT as one of its prerequisites.
+      
+      Answer with exactly one of TRUE or FALSE. Do not output anything else as that
+      makes parsing your answer with Regex impossible.
+    few_shot: >-
+      You are a helpful assistant in a knowledge verification process. Your task is to
+      determine whether a query expresses a relationship that is generally considered
+      TRUE or FALSE in the real world. The relationship query is a sentence in the form:
+      
+          "Suppose that [SOURCE-CONCEPT] RELATION-TYPE [TARGET-CONCEPT]"
+      
+      and the options for the RELATION-TYPE are:
+  
+  
+      1. "appears near" - Whether the SOURCE-CONCEPT exists at the location of the TARGET-CONCEPT.
+  
+      For example:
+      
+      
+          Query: Suppose that [food] appears near [grocery store]
+      
+          Answer: TRUE
+      
+      
+      because it is generally TRUE that food appears near a grocery store.
+  
+      For example:
+      
+      
+          Query: Suppose that [food] appears near [the moon]
+      
+          Answer: FALSE
+      
+      
+      because it is generally FALSE that food appears near the moon.
+  
+  
+      2. "causes" - Whether the SOURCE-CONCEPT causes the TARGET-CONCEPT.
+  
+      For example
+      
+      
+          Query: Suppose that [drinking beer] causes [drunkenness]
+      
+          Answer: TRUE
+  
+  
+      because it is generally TRUE that drinking beer causes drunkenness.
+      
+      
+      For example:
+      
+      
+          Query: Suppose that [drinking beer] causes [swimmer's ear]
+      
+          Answer: FALSE
+  
+  
+      because it is generally FALSE that drinking beer causes swimmer's ear.
+      
+  
+      3. "part of" - Whether the SOURCE-CONCEPT is a component part of the TARGET-CONCEPT.
+  
+      For example:
+      
+      
+          Query: Suppose that [uvula] is a part of [human body]
+      
+          Answer: TRUE
+      
+  
+      because it is generally TRUE that a uvula is a component part of the human body.
+      
+      
+      For example:
+      
+      
+          Query: Suppose that [uvula] is a part of [mountain]
+      
+          Answer: FALSE
+  
+  
+      because it is generally FALSE that a uvula is a component part of a mountain.
+      
+      
+      4. "type of" - Whether the SOURCE-CONCEPT is a type of the TARGET-CONCEPT.
+  
+      For example:
+      
+      
+          Query: Suppose that [acorn] is a type of [nut]
+      
+          Answer: TRUE
+  
+  
+      because it is generally TRUE that an acorn is a type of nut.
+      
+      
+      For example:
+      
+      
+          Query: Suppose that [acorn] is a type of [reptile]
+      
+          Answer: FALSE
+  
+  
+      because it is generally FALSE that an acorn is a type of reptile.
+      
+      
+      5. "used for" - Whether the SOURCE-CONCEPT is used for or used by the TARGET-CONCEPT.
+  
+      For example:
+      
+      
+          Query: Suppose that [brush] is used for [painting]
+      
+          Answer: TRUE
+  
+  
+      because it is generally TRUE that a brush can be used for painting.
+      
+      
+      For example:
+      
+          
+          Query: Suppose that [brush] is used for [bailing water]
+      
+          Answer: FALSE
+  
+  
+      because it is generally FALSE that a brush can be used for bailing water.
+      
+      
+      6. "prerequisite" - Whether the SOURCE-CONCEPT has the TARGET-CONCEPT as one of its prerequisites.
+  
+      For example:
+      
+      
+          Query: Suppose that [act in play] has prerequisite [memorize script]
+      
+          Answer: TRUE
+  
+  
+      because it is generally TRUE that to act in a play has memorizing the script as one of its prerequisites.
+      
+      
+      For example:
+      
+      
+          Query: Suppose that [act in play] has prerequisite [become accountant]
+      
+          Answer: FALSE
+      
+      
+      because it is generally FALSE that to act in a play has becoming an accountant as one of its prerequisites.
