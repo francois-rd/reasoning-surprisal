@@ -75,7 +75,7 @@ class DummyLLM(LLM):
             else:
                 token = first
             logprob = RankedLogprob(
-                chosen=Logprob(token=token, rank=2, logprob=-1),
+                chosen=Logprob(token=token, rank=2, logprob=-self.rng.random()),
                 others={},
                 ranking="absolute",
             )
