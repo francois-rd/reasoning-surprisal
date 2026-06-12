@@ -2,8 +2,6 @@ from dataclasses import dataclass, field
 from typing import Any
 from enum import Enum
 
-from ..core import AnswerLabel
-
 
 class MessageType(Enum):
     SYSTEM = "SYSTEM"
@@ -21,9 +19,6 @@ class Message:
 class PromptData:
     # Chat-like list of messages making up the current prompt (if any).
     messages: list[Message] | None
-
-    # The label of the current prompt within a prompt group.
-    label: AnswerLabel
 
     # The unique identifier for this prompt within a prompt group.
     prompt_id: int

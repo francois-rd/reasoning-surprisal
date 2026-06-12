@@ -24,11 +24,15 @@ from .base import (
     VariantID,
     VariantsConfig,
 )
+from .infer import AdditionalDataFields
 
 
-class ComparisonPoint(Enum):
-    TARGET_TERM = "TARGET_TERM"
-    ANSWER_TERM = "ANSWER_TERM"
+class DFCols(Enum):
+    SURPRISAL = "Surprisal"
+    VARIANT_ID = "VariantID"
+    RELATION_TYPE = "RelationType"
+    GROUP_ID = "GroupID"
+    PROMPT_SHOTS = "PromptShots"
 
 
 class DataLoader:
@@ -37,12 +41,12 @@ class DataLoader:
         formatter: ConceptNetFormatter,
         log_dir: str,
         flip_logprobs: bool,
-        aggregators: list[AggregatorOption],
+        aggregator: AggregatorOption,
     ):
         self.formatter = formatter
         self.log_dir = log_dir
         self.flip = flip_logprobs
-        self.aggregators = aggregators
+        self.agg = aggregator
         self.data = self.logger = self.llm = None
 
     def load(self, inference_path: str, llm: Nickname) -> pd.DataFrame:
@@ -50,27 +54,18 @@ class DataLoader:
         for inference in load_dataclass_jsonl(inference_path, t=Inference):
             if inference.error_message is not None:
                 continue
-            for cp in ComparisonPoint:
-                self._fill(inference, self._get_logprobs(inference, cp), cp)
+            self._fill(inference)
         if not self.data:
             raise ValueError(f"Empty data frame for: {inference_path}.")
         return pd.DataFrame(self.data)
 
-    def _get_logprobs(
-        self, inference: Inference, comparison_point: ComparisonPoint
-    ) -> list[float] | None:
+    def _get_logprobs(self, inference: Inference) -> list[float] | None:
         logprobs = Logprobs.from_dict(
             inference.derived_data["prompt_logprobs"], self.flip
         )
-
-        if comparison_point == ComparisonPoint.TARGET_TERM:
-            triplet = Triplet(**inference.prompt_data.additional_data["triplet"])
-            target = self.formatter.formatter.ensure_plain_text(triplet.target)
-        elif comparison_point == ComparisonPoint.ANSWER_TERM:
-            target = inference.prompt_data.label
-        else:
-            raise ValueError(f"Unsupported: {comparison_point}")
-
+        triplet_key = AdditionalDataFields.TRIPLET.value
+        triplet = Triplet(**inference.prompt_data.additional_data[triplet_key])
+        target = self.formatter.formatter.ensure_plain_text(triplet.target)
         seqs = list(logprobs.indices_of(target))
         desired_seqs = [s for s in seqs if self.formatter.is_desired_target(s)]
         if len(seqs) == 1:
@@ -89,25 +84,27 @@ class DataLoader:
             )
             return None
 
-    def _fill(
-        self, inference: Inference, logprobs: list[float] | None, cp: ComparisonPoint
-    ) -> None:
+    def _fill(self, inference: Inference) -> None:
+        logprobs = self._get_logprobs(inference)
         if logprobs is None:
             # Don't add if logprobs could not be found.
             return
 
-        variant_id = inference.prompt_data.additional_data["variant_id"]
-        shots = inference.prompt_data.additional_data["shots"]
-        triplet = Triplet(**inference.prompt_data.additional_data["triplet"])
-        for a in self.aggregators:
-            self.data.setdefault("VariantID", []).append(variant_id)
-            self.data.setdefault("ForcedLabel", []).append(inference.prompt_data.label)
-            self.data.setdefault("RelationType", []).append(triplet.relation)
-            self.data.setdefault("GroupID", []).append(inference.prompt_data.group_id)
-            self.data.setdefault("ComparisonPoint", []).append(cp.value)
-            self.data.setdefault("PromptShots", []).append(shots)
-            self.data.setdefault("Aggregator", []).append(a.value)
-            self.data.setdefault("AggLogprobs", []).append(a.aggregate(logprobs))
+        v_id_key = AdditionalDataFields.VARIANT_ID.value
+        triplet_key = AdditionalDataFields.TRIPLET.value
+        shots_key = AdditionalDataFields.PROMPT_SHOTS.value
+        variant_id = inference.prompt_data.additional_data[v_id_key]
+        shots = inference.prompt_data.additional_data[shots_key]
+        triplet = Triplet(**inference.prompt_data.additional_data[triplet_key])
+
+        self._do_fill(DFCols.SURPRISAL, self.agg.aggregate(logprobs))
+        self._do_fill(DFCols.VARIANT_ID, variant_id)
+        self._do_fill(DFCols.RELATION_TYPE, triplet.relation)
+        self._do_fill(DFCols.GROUP_ID, inference.prompt_data.group_id)
+        self._do_fill(DFCols.PROMPT_SHOTS, shots)
+
+    def _do_fill(self, col: DFCols, value) -> None:
+        self.data.setdefault(col.value, []).append(value)
 
 
 @command(name="cnet.postprocess")
@@ -160,5 +157,5 @@ class ConceptNetPostProcess:
             ),
             log_dir=self.cfg.analysis_dir(self.path.cnet_exp_dir),
             flip_logprobs=self.cfg.flip_logprobs,
-            aggregators=self.cfg.aggregators,
+            aggregator=self.cfg.aggregator,
         )

@@ -1,11 +1,12 @@
 from copy import deepcopy
+from enum import Enum
 import os
 
 from coma import InvocationData, command, preload
 from tqdm import tqdm
 import pandas as pd
 
-from ....core import AnswerLabel, SystemPromptsConfig, UserTemplatesConfig
+from ....core import SystemPromptsConfig, UserTemplatesConfig
 from ....io import (
     ConditionalPrinter,
     PathConfig,
@@ -43,6 +44,12 @@ from .base import (
     VariantID,
     VariantsConfig,
 )
+
+
+class AdditionalDataFields(Enum):
+    TRIPLET = "triplet"
+    VARIANT_ID = "variant_id"
+    PROMPT_SHOTS = "shots"
 
 
 @command(name="cnet.make.prompts")
@@ -110,16 +117,14 @@ class ConceptNetMakePrompts:
             variants_and_terms = {self.cfg.factual_variant_id: [cluster.factual_target]}
             variants_and_terms.update(cluster.non_factual_candidates.items())
             for variant_id, term in variants_and_terms.items():
-                prompts.setdefault(variant_id, []).extend(
-                    self._do_make_prompt(cluster, label, variant_id, term[0])
-                    for label in ["TRUE", "FALSE"]
+                prompts.setdefault(variant_id, []).append(
+                    self._do_make_prompt(cluster, variant_id, term[0])
                 )
         return prompts
 
     def _do_make_prompt(
         self,
         cluster: TripletVariantCluster,
-        label: AnswerLabel,
         variant_id: VariantID,
         top_ranked_term: ConceptNetTerm,
     ) -> PromptData:
@@ -127,20 +132,17 @@ class ConceptNetMakePrompts:
             messages=[
                 Message(MessageType.SYSTEM, "PLACEHOLDER"),
                 Message(MessageType.USER, "PLACEHOLDER"),
-                Message(MessageType.ASSISTANT, label),
-                Message(MessageType.USER, "CAPSTONE"),
             ],
-            label=label,
             prompt_id=self.id_generator.next_prompt_id(),
             group_id=self.id_generator.next_group_id(no_increment=True),
-            additional_data=dict(
-                triplet=Triplet(
+            additional_data={
+                AdditionalDataFields.TRIPLET.value: Triplet(
                     source=cluster.factual_query.source_term,
                     relation=cluster.factual_query.relation_type,
                     target=top_ranked_term,
                 ),
-                variant_id=variant_id,
-            ),
+                AdditionalDataFields.VARIANT_ID.value: variant_id,
+            },
         )
 
 
@@ -218,18 +220,21 @@ class ConceptNetInfer:
         prompts = []
         prompts_file = self.cfg.prompts_file(self.path.cnet_exp_dir, self.variant_id)
         for prompt_data in load_dataclass_jsonl(prompts_file, t=PromptData):
-            if self.variant_id != prompt_data.additional_data["variant_id"]:
+            v_id_key = AdditionalDataFields.VARIANT_ID.value
+            triplet_key = AdditionalDataFields.TRIPLET.value
+            shots_key = AdditionalDataFields.PROMPT_SHOTS.value
+            if self.variant_id != prompt_data.additional_data[v_id_key]:
                 continue
             if self.infer.skip(prompt_data):
                 continue
-            triplet = Triplet(**prompt_data.additional_data["triplet"])
+            triplet = Triplet(**prompt_data.additional_data[triplet_key])
             zero, few = prompt_data, deepcopy(prompt_data)
             zero.messages[0].text = self.system_prompt.zero_shot
             few.messages[0].text = self.system_prompt.few_shot
             zero.messages[1].text = self.formatter(triplet)
             few.messages[1].text = self.formatter(triplet)
-            zero.additional_data["shots"] = "zero"
-            few.additional_data["shots"] = "few"
+            zero.additional_data[shots_key] = "zero"
+            few.additional_data[shots_key] = "few"
             prompts.append(zero)
             prompts.append(few)
         self.print("Done.")

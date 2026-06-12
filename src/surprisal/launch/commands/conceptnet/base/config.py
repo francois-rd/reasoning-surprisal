@@ -57,27 +57,27 @@ class Config:
     checkpoint_frequency: float = 5 * 60  # E.g., save every 5 minutes.
     chosen_only_logprob: bool = True  # Keep all logprobs or teacher-forced only.
 
-    # Postprocessing fields.
+    # Postprocessing and analysis fields.
     collate_variants: list[VariantID] = field(  # Which inference variants to collate.
         default_factory=lambda: [_FactualVariantID]
-    )
-
-    # Analysis fields.
-    aggregators: list[AggregatorOption] = field(  # Which logprob aggs to use.
-        default_factory=lambda: [AggregatorOption.SUM, AggregatorOption.MIN]
-    )
+    )  # NOTE: Make sure a control (e.g., factual) is present AND appears first.
+    aggregator: AggregatorOption = AggregatorOption.SUM  # Which logprob agg to use.
     flip_logprobs: bool = True  # Whether to flip logprob sign from - to +.
 
-    def _build_id(self, variant_id: VariantID | None = None):
-        prefix = [variant_id] if variant_id is not None else []
-        return "-".join(
-            prefix
-            + [
-                str(self.subsampling_per_relation),
-                str(self.seed),
-                str(self.preprocess_nf_threshold),
-            ]
-        )
+    def _build_id(
+        self,
+        variant_id: VariantID | None = None,
+        aggregator: bool = False,
+    ):
+        items = []
+        if variant_id is not None:
+            items.append(str(variant_id))
+        if aggregator:
+            items.append(str(self.aggregator.value))
+        items.append(str(self.subsampling_per_relation))
+        items.append(str(self.seed))
+        items.append(str(self.preprocess_nf_threshold))
+        return "-".join(items)
 
     def preprocess_dir(self, root: str) -> str:
         return str(os.path.join(root, "preprocess", self._build_id()))
@@ -89,10 +89,10 @@ class Config:
         return str(os.path.join(root, "output", nickname, self._build_id()))
 
     def postprocess_dir(self, root: str) -> str:
-        return str(os.path.join(root, "postprocess", self._build_id()))
+        return str(os.path.join(root, "postprocess", self._build_id(aggregator=True)))
 
     def analysis_dir(self, root: str) -> str:
-        return str(os.path.join(root, "analysis", self._build_id()))
+        return str(os.path.join(root, "analysis", self._build_id(aggregator=True)))
 
     def plots_dir(self, root: str) -> str:
-        return str(os.path.join(root, "plots", self._build_id()))
+        return str(os.path.join(root, "plots", self._build_id(aggregator=True)))

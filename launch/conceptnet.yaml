@@ -16,14 +16,10 @@ prompt_batch_size: 10
 checkpoint_frequency: 300.0
 chosen_only_logprob: true
 
-# Postprocess.
+# Postprocess and analysis.
 collate_variants:  # Make sure a control condition is present AND appears first.
   - factual
   - random
   - controlled
-
-# Analysis.
-aggregators:
-  - SUM
-  - MIN
+aggregator: SUM
 flip_logprobs: true
