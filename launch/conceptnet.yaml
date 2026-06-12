@@ -1,5 +1,6 @@
 # General.
 verbose: true
+seed: 42
 llms:
   - dummy
 
@@ -7,7 +8,6 @@ llms:
 factual_variant_id: factual
 subsampling_per_relation: 200
 preprocess_nf_threshold: 5
-preprocess_seed: 42
 relation_type: AtLocation
 
 # Inference.
@@ -17,7 +17,7 @@ checkpoint_frequency: 300.0
 chosen_only_logprob: true
 
 # Postprocess.
-collate_variants:
+collate_variants:  # Make sure a control condition is present AND appears first.
   - factual
   - random
   - controlled

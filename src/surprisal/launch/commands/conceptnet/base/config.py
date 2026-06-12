@@ -41,13 +41,13 @@ class TripletVariantCluster:
 class Config:
     # General fields.
     verbose: bool = True  # Whether to be verbose during processing steps.
+    seed: int = 42  # Random seed for reproducibility.
     llms: list[Nickname] = field(default_factory=list)  # Which LLMs to use.
 
     # Preprocessing fields.
     factual_variant_id: VariantID = _FactualVariantID  # The baseline variant to use.
     subsampling_per_relation: int = 200  # Max number of samples per relation type.
     preprocess_nf_threshold: int = 5  # Min number of NF candidates to keep a pairing.
-    preprocess_seed: int = 42  # Random seed for reproducibility.
     relation_type: RelationType = "IsA"  # Which relation type to focus on. This
     # is needed only during preprocessing to avoid OOM issues.
 
@@ -74,7 +74,7 @@ class Config:
             prefix
             + [
                 str(self.subsampling_per_relation),
-                str(self.preprocess_seed),
+                str(self.seed),
                 str(self.preprocess_nf_threshold),
             ]
         )

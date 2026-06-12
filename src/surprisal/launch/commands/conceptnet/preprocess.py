@@ -105,7 +105,7 @@ class ConceptNetPreprocess:
         triplet_clusters: dict[Triplet, TripletVariantCluster],
         triplets: list[Triplet],
     ) -> None:
-        Random(self.cfg.preprocess_seed).shuffle(triplets)  # Shuffles in place.
+        Random(self.cfg.seed).shuffle(triplets)  # Shuffles in place.
         sample_count = 0
         for triplet in tqdm(triplets) if self.cfg.verbose else triplets:
             if sample_count >= self.cfg.subsampling_per_relation:
