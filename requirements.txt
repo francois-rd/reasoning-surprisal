@@ -4,8 +4,9 @@ dacite>=1.8.1
 hampel==1.0.2
 kaleido>=1.0.0
 langchain~=0.3.7
+matplotlib~=3.10.9
+numpy~=2.2.6
 openai>=1.79.0
-numpy~=2.26
 pandas>=2.2.3
 plotly>=6.1.2
 plotly-express>=0.4.1
@@ -14,5 +15,6 @@ ruptures==1.1.10
 scipy>=1.15.3
 scikit-learn>=1.7.2
 spacy>=3.8.7
+statsmodels~=0.14.6
 tqdm>=4.67.1
 vec-inf>=0.6.0

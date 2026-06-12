@@ -63,6 +63,8 @@ class Config:
     )  # NOTE: Make sure a control (e.g., factual) is present AND appears first.
     aggregator: AggregatorOption = AggregatorOption.SUM  # Which logprob agg to use.
     flip_logprobs: bool = True  # Whether to flip logprob sign from - to +.
+    show_assumption_plots: bool = False  # Whether to show homoscedasticity and
+    # normality plots for linear mixed models.
 
     def _build_id(
         self,

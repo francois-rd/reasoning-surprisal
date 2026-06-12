@@ -1,0 +1,5 @@
+output_distribution:
+  - text: "TRUE"
+    weight: 1
+  - text: "FALSE"
+    weight: 1

@@ -3,6 +3,8 @@ verbose: true
 seed: 42
 llms:
   - dummy
+  - Meta-Llama-3.1-8B-Instruct
+
 
 # Preprocess.
 factual_variant_id: factual
@@ -23,3 +25,4 @@ collate_variants:  # Make sure a control condition is present AND appears first.
   - controlled
 aggregator: SUM
 flip_logprobs: true
+show_assumption_plots: false

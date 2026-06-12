@@ -40,6 +40,7 @@ cnet.make.prompts
 cnet.infer
 cnet.count.errors
 cnet.postprocess
+cnet.analyze
 test.launch
 " launch
 

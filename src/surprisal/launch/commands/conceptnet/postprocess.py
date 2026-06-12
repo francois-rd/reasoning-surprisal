@@ -33,6 +33,8 @@ class DFCols(Enum):
     RELATION_TYPE = "RelationType"
     GROUP_ID = "GroupID"
     PROMPT_SHOTS = "PromptShots"
+    P_VALUE = "PValue"
+    LLM = "LLM"
 
 
 class DataLoader:
