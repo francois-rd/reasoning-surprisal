@@ -177,13 +177,13 @@ class OpenAIConfig:
 
     # The base URL of the local vLLM server hosting the local LLM (or None for
     # remote OpenAI server requests).
-    vllm_base_url: str | None = None
+    vllm_base_url: str | None = "http://127.0.0.1:8081/v1"
 
     # Whether to split out the system instructions (for LLMs that support it).
-    use_system_prompt: bool = False
+    use_system_prompt: bool = True
 
     # Whether to use the OpenAI Completions or OpenAI ChatCompletions protocol.
-    use_chat: bool = False
+    use_chat: bool = True
 
     # Conversion between each MessageType and the specific role name for this LLM.
     message_type_to_role_map: dict[MessageType, str] = field(
