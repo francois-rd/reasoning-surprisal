@@ -21,16 +21,17 @@ from .base import Config
 from .postprocess import DFCols
 
 
-def all_category_orders() -> dict[str, list]:
+def all_category_orders(llm_order: list[str]) -> dict[str, list]:
     return {
-        "RelationType": [
+        DFCols.RELATION_TYPE.value: [
             "AtLocation",
             "Causes",
             "PartOf",
             "IsA",
             "UsedFor",
             "HasPrerequisite",
-        ]
+        ],
+        DFCols.LLM.value: llm_order.copy(),
     }
 
 
@@ -178,7 +179,7 @@ class ViolinPlots:
             y=DFCols.SURPRISAL.value,
             color=DFCols.RELATION_TYPE.value,
             box=True,
-            category_orders=all_category_orders(),
+            category_orders=all_category_orders(self.cfg.llms),
             template="simple_white",
             width=700,  # default is 700
             height=500,  # default is 500
@@ -193,10 +194,7 @@ class ViolinPlots:
             ),
             yaxis=dict(title=dict(text=f"Relative Surprisal Difference", font_size=20)),
             margin=dict(l=0, r=0, b=40, t=0),
-            legend=dict(
-                title=dict(text="   Legend", font_size=16),
-                # xanchor="right", yanchor="top", # This + width=500 above for compact.
-            ),
+            legend=dict(title=dict(text="   Legend", font_size=16)),
         )
         fig.add_hline(y=0.0, opacity=0.5, line_width=2, line_dash="dash")
         fig.update_traces(meanline_visible=True)
@@ -313,8 +311,7 @@ class BarPlots:
             plots[(shots, variant_id)] = self._make_plot(group_df)
         return plots
 
-    @staticmethod
-    def _make_plot(df: pd.DataFrame) -> go.Figure:
+    def _make_plot(self, df: pd.DataFrame) -> go.Figure:
         # Aggregate raw data.
         agg_df = (
             df.groupby(by=[DFCols.RELATION_TYPE.value, DFCols.LLM.value])
@@ -333,7 +330,7 @@ class BarPlots:
             color=DFCols.RELATION_TYPE.value,
             error_y="CI",
             barmode="group",
-            category_orders=all_category_orders(),
+            category_orders=all_category_orders(self.cfg.llms),
             template="simple_white",
             width=700,  # default is 700
             height=500,  # default is 500
@@ -341,13 +338,10 @@ class BarPlots:
 
         fig.update_layout(
             font=dict(family="Times New Roman", weight="bold"),
-            xaxis=dict(title=None),
+            xaxis=dict(title=None, tickfont=dict(size=10)),
             yaxis=dict(title=dict(text=f"Relative Surprisal Difference", font_size=20)),
-            margin=dict(l=0, r=0, b=60, t=0),
-            legend=dict(
-                title=dict(text="   Legend", font_size=16),
-                # xanchor="right", yanchor="top", # This + width=500 above for compact.
-            ),
+            margin=dict(l=0, r=0, b=30, t=0),
+            legend=dict(title=dict(text="   Legend", font_size=16)),
         )
         fig.update_traces(opacity=0.8, marker_line_width=2)
         return fig
@@ -428,10 +422,11 @@ class ConceptNetAnalyze:
             self.print("    Running statistical analysis...")
             analysis_df, analysis_summary = Analyze(self.cfg, df).run()
             self._save_analysis(nickname, analysis_df, analysis_summary)
-            self.print("    Building violin plots...")
-            saver = PlotSaver(self.path, self.cfg, nickname)
-            ViolinPlots(self.cfg, df, analysis_df=analysis_df).run(saver)
-            self.print("    Done.")
+            if self.cfg.create_violin_plots:
+                self.print("    Building violin plots...")
+                saver = PlotSaver(self.path, self.cfg, nickname)
+                ViolinPlots(self.cfg, df, analysis_df=analysis_df).run(saver)
+                self.print("    Done.")
         self.print("Building collective bar plots...")
         bar_plots.run(PlotSaver(self.path, self.cfg, nickname=None))
         self.print("Done.")

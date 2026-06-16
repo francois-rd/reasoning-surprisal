@@ -26,3 +26,4 @@ collate_variants:  # Make sure a control condition is present AND appears first.
 aggregator: SUM
 flip_logprobs: true
 show_assumption_plots: false
+create_violin_plots: false

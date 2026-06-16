@@ -65,6 +65,8 @@ class Config:
     flip_logprobs: bool = True  # Whether to flip logprob sign from - to +.
     show_assumption_plots: bool = False  # Whether to show homoscedasticity and
     # normality plots for linear mixed models.
+    create_violin_plots: bool = False  # Whether to create detailed violin plots for
+    # each LLM. Summary bar charts are created no matter what.
 
     def _build_id(
         self,
