@@ -4,16 +4,16 @@ variants:
     linguistics_id: no_ling
     system_prompt_id: cnet_simple
     user_template_id: cnet_simple
-    parser_id: true_false
+    parser_id: no_parser
   random:
     ranker_id: random
     linguistics_id: no_ling
     system_prompt_id: cnet_simple
     user_template_id: cnet_simple
-    parser_id: true_false
+    parser_id: no_parser
   controlled:
     ranker_id: cnet_pos
     linguistics_id: all_no_children
     system_prompt_id: cnet_simple
     user_template_id: cnet_simple
-    parser_id: true_false
+    parser_id: no_parser

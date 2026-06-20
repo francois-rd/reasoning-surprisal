@@ -2,15 +2,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from enum import Enum
 
-from .base import (
-    JSONParser,
-    NoOutputParser,
-    RegexMatchParser,
-    RegexExtractionParser,
-    OptionsParser,
-    OutputParser,
-)
-from .parsers import MCQJSONParser, MCQPatternParser, SimpleMCQParser
+from .base import NoOutputParser, OutputParser
 
 ParserID = str
 
@@ -18,33 +10,12 @@ ParserID = str
 class ParserType(Enum):
     """Enumeration of all managed parser types."""
 
-    JSON = "JSON"
     NONE = "NONE"
-    MATCH = "MATCH"
-    EXTRACT = "EXTRACT"
-    OPTIONS = "OPTIONS"
-    MCQ_JSON = "MCQ_JSON"
-    MCQ_PATTERN = "MCQ_PATTERN"
-    SIMPLE_MCQ = "SIMPLE_MCQ"
 
 
 def parser_factory(type_: ParserType, parser_data: dict[str, Any]) -> OutputParser:
-    if type_ == ParserType.JSON:
-        return JSONParser(**parser_data)
-    elif type_ == ParserType.NONE:
+    if type_ == ParserType.NONE:
         return NoOutputParser(**parser_data)
-    elif type_ == ParserType.MATCH:
-        return RegexMatchParser(**parser_data)
-    elif type_ == ParserType.EXTRACT:
-        return RegexExtractionParser(**parser_data)
-    elif type_ == ParserType.OPTIONS:
-        return OptionsParser(**parser_data)
-    elif type_ == ParserType.MCQ_JSON:
-        return MCQJSONParser(**parser_data)
-    elif type_ == ParserType.MCQ_PATTERN:
-        return MCQPatternParser(**parser_data)
-    elif type_ == ParserType.SIMPLE_MCQ:
-        return SimpleMCQParser(**parser_data)
     else:
         raise ValueError(f"Unsupported parser type: {type_}")
 
