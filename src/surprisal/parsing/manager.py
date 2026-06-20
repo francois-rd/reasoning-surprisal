@@ -12,7 +12,6 @@ from .base import (
 )
 from .parsers import MCQJSONParser, MCQPatternParser, SimpleMCQParser
 
-
 ParserID = str
 
 

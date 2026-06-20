@@ -7,7 +7,6 @@ import coma
 from ..io import logging as log
 from .commands import test_launch  # This also imports all commands in all submodules.
 
-
 # ===== Parser hooks =====
 
 overwrite_hook = coma.add_argument_factory(

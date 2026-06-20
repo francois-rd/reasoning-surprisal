@@ -5,7 +5,6 @@ import pkgutil
 
 from coma import command
 
-
 ModuleName = str
 
 
