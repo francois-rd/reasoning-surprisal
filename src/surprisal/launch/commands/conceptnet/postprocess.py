@@ -32,7 +32,6 @@ class DFCols(Enum):
     VARIANT_ID = "VariantID"
     RELATION_TYPE = "RelationType"
     GROUP_ID = "GroupID"
-    PROMPT_SHOTS = "PromptShots"
     P_VALUE = "PValue"
     LLM = "LLM"
 
@@ -94,16 +93,13 @@ class DataLoader:
 
         v_id_key = AdditionalDataFields.VARIANT_ID.value
         triplet_key = AdditionalDataFields.TRIPLET.value
-        shots_key = AdditionalDataFields.PROMPT_SHOTS.value
         variant_id = inference.prompt_data.additional_data[v_id_key]
-        shots = inference.prompt_data.additional_data[shots_key]
         triplet = Triplet(**inference.prompt_data.additional_data[triplet_key])
 
         self._do_fill(DFCols.SURPRISAL, self.agg.aggregate(logprobs))
         self._do_fill(DFCols.VARIANT_ID, variant_id)
         self._do_fill(DFCols.RELATION_TYPE, triplet.relation)
         self._do_fill(DFCols.GROUP_ID, inference.prompt_data.group_id)
-        self._do_fill(DFCols.PROMPT_SHOTS, shots)
 
     def _do_fill(self, col: DFCols, value) -> None:
         self.data.setdefault(col.value, []).append(value)

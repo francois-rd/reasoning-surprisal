@@ -48,14 +48,6 @@ class Analyze:
         )
 
     def run(self) -> tuple[pd.DataFrame, str]:
-        dfs, summary = [], ""
-        for shots, group_df in self.df.groupby(by=DFCols.PROMPT_SHOTS.value):
-            shots_df, shots_summary = self._do_run(shots, group_df)
-            dfs.append(shots_df)
-            summary += shots_summary + "\n\n"
-        return pd.concat(dfs), summary
-
-    def _do_run(self, shots, df: pd.DataFrame) -> tuple[pd.DataFrame, str]:
         # The inclusion of these vc parameters depends on real data.
         vc_formula = {
             # variant_id: f"0 + C({variant_id})",  # This is CLEARLY pathological in the residuals plot.
@@ -69,7 +61,7 @@ class Analyze:
         group_id = DFCols.GROUP_ID.value
         model = mixedlm(
             formula=f"{surprisal} ~ C({variant_id})*C({relation_type})",
-            data=df,
+            data=self.df,
             vc_formula=vc_formula,
             groups=group_id,
         )
@@ -78,11 +70,10 @@ class Analyze:
         if self.cfg.show_assumption_plots:
             self.assumption_plots(result)
 
-        summary = f"********** {shots} shots **********\n{result.summary()}"
-        var_ids = df[variant_id].unique().tolist()
+        var_ids = self.df[variant_id].unique().tolist()
         var_ids.remove(self.cfg.factual_variant_id)
-        r_types = df[relation_type].unique()
-        return self._post_hoc_tests(shots, var_ids, r_types, result), summary
+        r_types = self.df[relation_type].unique()
+        return self._post_hoc_tests(var_ids, r_types, result), str(result.summary())
 
     @staticmethod
     def assumption_plots(result):
@@ -100,7 +91,7 @@ class Analyze:
         plt.show()
 
     @staticmethod
-    def _post_hoc_tests(shots, variant_ids, relation_types, result) -> pd.DataFrame:
+    def _post_hoc_tests(variant_ids, relation_types, result) -> pd.DataFrame:
         data = {}
         for relation in relation_types:
             for variant in variant_ids:
@@ -122,7 +113,6 @@ class Analyze:
                     r_matrix[0, interaction_index] = 1
                 test_result = result.t_test(r_matrix, use_t=True)
                 p_value = test_result.pvalue
-                data.setdefault(DFCols.PROMPT_SHOTS.value, []).append(shots)
                 data.setdefault(DFCols.RELATION_TYPE.value, []).append(relation)
                 data.setdefault(DFCols.VARIANT_ID.value, []).append(variant)
                 data.setdefault(DFCols.P_VALUE.value, []).append(p_value)
@@ -162,18 +152,17 @@ class ViolinPlots:
         self.analysis_df = analysis_df
 
     def run(self, saver: PlotSaver) -> None:
-        for shots, group_df in self.df.groupby(by=DFCols.PROMPT_SHOTS.value):
-            for file_ids, fig in self._do_run(shots, group_df).items():
-                saver.save(dir_ids=("violin",), file_ids=file_ids, fig=fig)
+        for file_ids, fig in self._do_run().items():
+            saver.save(dir_ids=("violin",), file_ids=file_ids, fig=fig)
 
-    def _do_run(self, shots, df: pd.DataFrame) -> dict[tuple, go.Figure]:
-        df = self._prepare(df)
+    def _do_run(self) -> dict[tuple, go.Figure]:
+        df = self._prepare(self.df)
         plots, v_id_key = {}, DFCols.VARIANT_ID.value
         for variant_id, group_df in df.groupby(by=v_id_key, observed=True):
-            plots[(shots, variant_id)] = self._make_plot(shots, variant_id, group_df)
+            plots[(variant_id,)] = self._make_plot(group_df)
         return plots
 
-    def _make_plot(self, shots, variant_id, df: pd.DataFrame) -> go.Figure:
+    def _make_plot(self, df: pd.DataFrame) -> go.Figure:
         fig = px.violin(
             data_frame=df,
             y=DFCols.SURPRISAL.value,
@@ -198,54 +187,12 @@ class ViolinPlots:
         )
         fig.add_hline(y=0.0, opacity=0.5, line_width=2, line_dash="dash")
         fig.update_traces(meanline_visible=True)
-        self._add_stat_sig_markers(shots, variant_id, df, fig)
         return fig
-
-    def _add_stat_sig_markers(
-        self, shots, variant_id, df: pd.DataFrame, fig: go.Figure
-    ) -> None:
-        # Currently broken: annotations are being added next to violin plots as new
-        # traces rather than above each one.
-        return
-
-        # # Get corresponding p-values for each relation type.
-        # shots_mask = self.analysis_df[DFCols.PROMPT_SHOTS.value] == shots
-        # vid_mask = self.analysis_df[DFCols.VARIANT_ID.value] == variant_id
-        # subset_df = self.analysis_df[shots_mask & vid_mask]
-        # p_values = {}
-        # for r in subset_df.to_dict(orient="records"):
-        #     p_values[r[DFCols.RELATION_TYPE.value]] = r[DFCols.P_VALUE.value].item()
-        #
-        # # Calculate a y-position slightly above the maximum data value.
-        # y_pos = df[DFCols.SURPRISAL.value].max() * 1.05
-        # for relation_type, p_value in p_values.items():
-        #     if p_value < 0.001:
-        #         text = "****"
-        #     elif p_value < 0.005:
-        #         text = "***"
-        #     elif p_value < 0.01:
-        #         text = "**"
-        #     elif p_value < 0.05:
-        #         text = "*"
-        #     else:
-        #         text = ""
-        #     fig.add_annotation(
-        #         x=relation_type,  # This is not working. Add 'next to' rather than 'above'.
-        #         y=y_pos,  # Position on y-axis (above the violin).
-        #         text=text,  # Significance symbol.
-        #         showarrow=False,
-        #         font=dict(
-        #             family="Times New Roman", size=16, weight="bold", color="black"
-        #         ),
-        #         xref="x",  # Reference x to the data axis.
-        #         yref="y",  # Reference y to the data axis.
-        #     )
 
     def _prepare(self, df: pd.DataFrame) -> pd.DataFrame:
         v_id_key = DFCols.VARIANT_ID.value
         g_id_key = DFCols.GROUP_ID.value
         s_key = DFCols.SURPRISAL.value
-        shots_key = DFCols.PROMPT_SHOTS.value
 
         # Split treatments from control.
         df_control = df[df[v_id_key] == self.cfg.factual_variant_id].copy()
@@ -278,7 +225,7 @@ class ViolinPlots:
 
         # Drop intermediary calculation columns.
         return df_merged.drop(
-            columns=[f"{s_key}_treat", f"{s_key}_control", shots_key] + diff_cols
+            columns=[f"{s_key}_treat", f"{s_key}_control"] + diff_cols
         )
 
 
@@ -294,21 +241,18 @@ class BarPlots:
         # Prepare all.
         dfs = []
         for nickname, df in self.dfs.items():
-            for shots, group_df in df.groupby(by=DFCols.PROMPT_SHOTS.value):
-                group_df = self._prepare(group_df)
-                group_df[DFCols.LLM.value] = nickname
-                dfs.append(group_df)
-        df = pd.concat(dfs)
+            df = self._prepare(df)
+            df[DFCols.LLM.value] = nickname
+            dfs.append(df)
 
         # Run prepared collection.
-        for shots, group_df in df.groupby(by=DFCols.PROMPT_SHOTS.value):
-            for file_ids, fig in self._do_run(shots, group_df).items():
-                saver.save(dir_ids=("bar",), file_ids=file_ids, fig=fig)
+        for file_ids, fig in self._do_run(pd.concat(dfs)).items():
+            saver.save(dir_ids=("bar",), file_ids=file_ids, fig=fig)
 
-    def _do_run(self, shots, df: pd.DataFrame) -> dict[tuple, go.Figure]:
+    def _do_run(self, df: pd.DataFrame) -> dict[tuple, go.Figure]:
         plots, v_id_key = {}, DFCols.VARIANT_ID.value
         for variant_id, group_df in df.groupby(by=v_id_key, observed=True):
-            plots[(shots, variant_id)] = self._make_plot(group_df)
+            plots[(variant_id,)] = self._make_plot(group_df)
         return plots
 
     def _make_plot(self, df: pd.DataFrame) -> go.Figure:

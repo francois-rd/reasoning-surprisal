@@ -174,3 +174,26 @@ prompts:
       
       
       because it is generally FALSE that to act in a play has becoming an accountant as one of its prerequisites.
+  cnet_simple: >-
+    You are a helpful assistant in a knowledge verification process. Your task is to
+    determine whether a query expresses a relationship that is generally considered
+    TRUE or FALSE in the real world. The relationship query is a sentence in the form:
+    
+        "Suppose that [SOURCE-CONCEPT] RELATION-TYPE [TARGET-CONCEPT]"
+    
+    and the options for the RELATION-TYPE are:
+    
+        1. "appears near" - Whether the SOURCE-CONCEPT exists at the location of the TARGET-CONCEPT.
+    
+        2. "causes" - Whether the SOURCE-CONCEPT causes the TARGET-CONCEPT.
+    
+        3. "part of" - Whether the SOURCE-CONCEPT is a component part of the TARGET-CONCEPT.
+    
+        4. "type of" - Whether the SOURCE-CONCEPT is a type of the TARGET-CONCEPT.
+    
+        5. "used for" - Whether the SOURCE-CONCEPT is used for or used by the TARGET-CONCEPT.
+    
+        6. "prerequisite" - Whether the SOURCE-CONCEPT has the TARGET-CONCEPT as one of its prerequisites.
+    
+    Answer with exactly one of TRUE or FALSE. Do not output anything else as that
+    makes parsing your answer with Regex impossible.

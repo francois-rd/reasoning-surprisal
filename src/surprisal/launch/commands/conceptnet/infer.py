@@ -1,10 +1,7 @@
-from copy import deepcopy
 from enum import Enum
 import os
 
 from coma import InvocationData, command, preload
-from tqdm import tqdm
-import pandas as pd
 
 from ....core import SystemPromptsConfig, UserTemplatesConfig
 from ....io import (
@@ -18,12 +15,10 @@ from ....llms import (
     CheckpointedParallelInference,
     DummyConfig,
     IDGenerator,
-    Inference,
     LLMsConfig,
     LLMImplementation,
     Message,
     MessageType,
-    Nickname,
     OpenAIConfig,
     ParallelInference,
     PromptData,
@@ -49,7 +44,6 @@ from .base import (
 class AdditionalDataFields(Enum):
     TRIPLET = "triplet"
     VARIANT_ID = "variant_id"
-    PROMPT_SHOTS = "shots"
 
 
 @command(name="cnet.make.prompts")
@@ -222,62 +216,16 @@ class ConceptNetInfer:
         for prompt_data in load_dataclass_jsonl(prompts_file, t=PromptData):
             v_id_key = AdditionalDataFields.VARIANT_ID.value
             triplet_key = AdditionalDataFields.TRIPLET.value
-            shots_key = AdditionalDataFields.PROMPT_SHOTS.value
             if self.variant_id != prompt_data.additional_data[v_id_key]:
                 continue
             if self.infer.skip(prompt_data):
                 continue
             triplet = Triplet(**prompt_data.additional_data[triplet_key])
-            zero, few = prompt_data, deepcopy(prompt_data)
-            zero.messages[0].text = self.system_prompt.zero_shot
-            few.messages[0].text = self.system_prompt.few_shot
-            zero.messages[1].text = self.formatter(triplet)
-            few.messages[1].text = self.formatter(triplet)
-            zero.additional_data[shots_key] = "zero"
-            few.additional_data[shots_key] = "few"
-            prompts.append(zero)
-            prompts.append(few)
+            prompt_data.messages[0].text = self.system_prompt
+            prompt_data.messages[1].text = self.formatter(triplet)
+            prompts.append(prompt_data)
         self.print("Done.")
         return prompts
 
     def run(self):
         self.infer(self.prompts, add_prompt_logprobs=True)
-
-
-@command(name="cnet.count.errors")
-class ConceptNetCountErrors:
-    def __init__(self, path: PathConfig, conceptnet: Config):
-        self.path, self.cfg = path, conceptnet
-        self.print = ConditionalPrinter(self.cfg.verbose)
-
-    def _skip(self, test_nickname: Nickname) -> bool:
-        for nickname in self.cfg.llms:
-            if flatten(test_nickname) == flatten(nickname):
-                return False
-        return True
-
-    @staticmethod
-    def _process(inference_path: str) -> tuple[int, int]:
-        errors, total = 0, 0
-        for inference in load_dataclass_jsonl(inference_path, t=Inference):
-            total += 1
-            if inference.error_message is not None:
-                errors += 1
-        return errors, total
-
-    def run(self):
-        self.print("Processing...")
-        data, in_dir = {}, os.path.join(self.path.cnet_exp_dir, "output")
-        for walk in tqdm(list(walk_files(in_dir))):
-            inference_path, nickname = walk.path, walk.no_ext()
-            if self._skip(nickname):
-                continue
-            errors, total = self._process(inference_path)
-            data.setdefault("Details", []).append(os.path.split(walk.root)[1])
-            data.setdefault("Nickname", []).append(nickname)
-            data.setdefault("Errors", []).append(errors)
-            data.setdefault("Total", []).append(total)
-        self.print("Done.")
-        pd.set_option("display.max_colwidth", None)
-        pd.set_option("display.max_rows", None)
-        print(pd.DataFrame(data))

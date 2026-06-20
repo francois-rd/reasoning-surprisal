@@ -2,12 +2,7 @@ from dataclasses import dataclass
 
 SystemPromptID = str
 UserTemplateID = str
-
-
-@dataclass
-class SystemPrompt:
-    zero_shot: str
-    few_shot: str
+SystemPrompt = str
 
 
 @dataclass
