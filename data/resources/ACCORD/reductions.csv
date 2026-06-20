@@ -1,0 +1,23 @@
+relation1_or_pairing,relation2,case,reduction_type,reduction_order,relation2_surface_form
+spatial,spatial,1,spatial,MAINTAIN,Suppose that {} appears near {}
+spatial,part,1,spatial,MAINTAIN,Suppose that {} is a part of {}
+spatial,part,4,spatial,REVERSE,Suppose that {} is a part of {}
+causal,causal,1,causal,MAINTAIN,Suppose that [[only|only]] {} causes {}
+causal,causal,4,causal,REVERSE,Suppose that {} [[only|only]] causes {}
+causal,type,2,causal,MAINTAIN,Suppose that {} is a type of {}
+causal,type,4,causal,REVERSE,Suppose that {} is a type of {}
+part,part,1,part,MAINTAIN,Suppose that {} is [[the only|the only]] part of {}
+part,part,4,part,REVERSE,Suppose that {} is a part of [[only|only]] {}
+part,type,2,part,MAINTAIN,Suppose that {} is a type of {}
+type,type,1,type,MAINTAIN,Suppose that {} is [[the only|the only]] type of {}
+type,type,4,type,REVERSE,Suppose that {} is a type of {}
+purpose,purpose,1,purpose,MAINTAIN,Suppose that [[only|only]] {} is used for {}
+purpose,purpose,4,purpose,REVERSE,Suppose that {} is [[only|only]] used for {}
+purpose,causal,4,purpose,REVERSE,Suppose that {} [[only|only]] causes {}
+purpose,prerequisite,2,purpose,MAINTAIN,Suppose that {} has [[as only|as only]] prerequisite {}
+prerequisite,prerequisite,1,prerequisite,MAINTAIN,Suppose that [[only|only]] {} has prerequisite {}
+prerequisite,prerequisite,4,prerequisite,REVERSE,Suppose that {} has [[as only|as only]] prerequisite {}
+spatial,type,2,spatial,MAINTAIN,Suppose that {} is a type of {}
+spatial,type,4,spatial,REVERSE,Suppose that {} is a type of {}
+purpose,type,4,purpose,REVERSE,Suppose that {} is a type of {}
+prerequisite,type,4,prerequisite,REVERSE,Suppose that {} is a type of {}
