@@ -2,8 +2,14 @@
 verbose: true
 seed: 42
 llms:
-  - dummy
-  - Meta-Llama-3.1-8B-Instruct
+  - Meta-Llama-3.1-8B-Instruct  # 8B parameters
+  - aya-expanse-32b  # 32B parameters
+  - DeepSeek-R1-Distill-Qwen-32B  # 33B parameters
+  - Qwen3-32B  # 33B parameters
+  - QwQ-32B  # 33B parameters
+  - Qwen2.5-72B-Instruct  # 73B parameters
+  - Mistral-Large-Instruct-2411  # 123B parameters
+  - Mixtral-8x22B-v0.1  # 141B parameters  # use_chat=False for this one, or it blocks indefinitely
 
 
 # Preprocess.
