@@ -282,9 +282,9 @@ class BarPlots:
 
         fig.update_layout(
             font=dict(family="Times New Roman", weight="bold"),
-            xaxis=dict(title=None, tickfont=dict(size=10)),
+            xaxis=dict(title=None, tickfont=dict(size=8), tickangle=15),
             yaxis=dict(title=dict(text=f"Relative Surprisal Difference", font_size=20)),
-            margin=dict(l=0, r=0, b=30, t=0),
+            margin=dict(l=0, r=0, b=60, t=0),
             legend=dict(title=dict(text="   Legend", font_size=16)),
         )
         fig.update_traces(opacity=0.8, marker_line_width=2)
