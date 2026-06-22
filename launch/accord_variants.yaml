@@ -1,0 +1,25 @@
+variants:
+  baseline:
+    subset: BASELINE
+    system_prompt_id: accord_baseline
+    user_template_id: accord_baseline
+  one:
+    subset: ONE
+    system_prompt_id: accord_other
+    user_template_id: accord_other
+  two:
+    subset: TWO
+    system_prompt_id: accord_other
+    user_template_id: accord_other
+  three:
+    subset: THREE
+    system_prompt_id: accord_other
+    user_template_id: accord_other
+  four:
+    subset: FOUR
+    system_prompt_id: accord_other
+    user_template_id: accord_other
+  five:
+    subset: FIVE
+    system_prompt_id: accord_other
+    user_template_id: accord_other

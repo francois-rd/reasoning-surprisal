@@ -38,10 +38,13 @@ complete -W "
 cnet.preprocess
 cnet.make.prompts
 cnet.infer
-cnet.count.errors
 cnet.postprocess
 cnet.analyze
+accord.make.prompts
+accord.infer
+accord.postprocess
 test.launch
+test.accord.loader
 " launch
 
 
@@ -69,6 +72,25 @@ launch-cnet-infer-all-variants () {
   for v in factual random controlled ; do
     echo inference_variant_id="$v"
     launch-cnet-infer "$@" -- inference_variant_id="$v"
+  done
+  END_TIME=$(date +%s)
+  echo "Completed all runs in $((END_TIME - START_TIME)) total seconds."
+}
+
+
+launch-accord-infer () {
+  pushd "$COMA_DEFAULT_CONFIG_DIR" > /dev/null || exit
+  bash accord/infer.bash "$@"
+  popd > /dev/null || exit
+}
+export -f launch-accord-infer
+
+
+launch-accord-infer-all-variants () {
+  START_TIME=$(date +%s)
+  for v in baseline one two three four five ; do
+    echo inference_variant_id="$v"
+    launch-accord-infer "$@" -- inference_variant_id="$v"
   done
   END_TIME=$(date +%s)
   echo "Completed all runs in $((END_TIME - START_TIME)) total seconds."

@@ -1,0 +1,19 @@
+verbose: true
+seed: 42
+llms:
+  - dummy
+inference_variant_id: baseline
+prompt_batch_size: 10
+checkpoint_frequency: 300.0
+chosen_only_logprob: true
+collate_variants:
+  - baseline
+  - one
+  - two
+  - three
+  - four
+  - five
+aggregator: SUM
+flip_logprobs: true
+show_assumption_plots: false
+create_violin_plots: false

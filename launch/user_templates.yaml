@@ -2,3 +2,15 @@ templates:
   cnet_simple:
     template:  "Is the following relationship true or false?\n\n{data}\nAnswer:"
     indicator: Is the following relationship true or false?
+  accord_baseline:
+    template: Answer the following multiple-choice question with the best-fit answer.
+    indicator: "Question:"
+  accord_other:
+    template: >-
+      Below are a set of logical statements relating to a multiple-choice question.
+      The contents of the statements may disagree with your prior knowledge of the
+      world. That is ok. Your task is to provide the most appropriate answer to the
+      multiple-choice question that follows based on the **reasoning presented in the
+      statements**, even if that answer disagrees with your prior knowledge. Provide
+      the best-fit answer.
+    indicator: "Question:"
