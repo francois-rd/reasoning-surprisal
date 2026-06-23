@@ -15,16 +15,6 @@ from .dataclasses import (
     CsqaID,
     CsqaBase,
 )
-from .metric import (
-    AbsoluteMetrics,
-    AbsMetricID,
-    AbsMetricType,
-    AbsMetricSubType,
-    PredictionLogprobs,
-    RelativeMetrics,
-    RelativeMetricID,
-    RelativeMetricType,
-)
 from .surfacer import (
     InstanceSurfacer,
     OrderingSurfacer,
