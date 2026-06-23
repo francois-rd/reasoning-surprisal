@@ -23,8 +23,10 @@ from .postprocess import DFCols
 
 
 def all_category_orders(llm_order: list[str]) -> dict[str, list]:
+def all_category_orders(llm_order: list[str] | None = None) -> dict[str, list]:
     subsets = [s.value for s in AccordSubset if s != AccordSubset.BASELINE]
-    return {DFCols.SUBSET.value: subsets, DFCols.LLM.value: llm_order.copy()}
+    llm_order = [] if llm_order is None else llm_order.copy()
+    return {DFCols.SUBSET.value: subsets, DFCols.LLM.value: llm_order}
 
 
 class ConditionType(Enum):
@@ -273,7 +275,7 @@ class ViolinPlots:
             y=DFCols.SURPRISAL.value,
             color=DFCols.SUBSET.value,
             box=True,
-            category_orders=all_category_orders(self.cfg.llms),
+            category_orders=all_category_orders(),
             template="simple_white",
             width=700,  # default is 700
             height=500,  # default is 500
@@ -286,9 +288,9 @@ class ViolinPlots:
                 showticklabels=False,
                 ticklen=0,
             ),
-            yaxis=dict(title=dict(text=f"Relative Surprisal Difference", font_size=20)),
+            yaxis=dict(title=dict(text=f"Surprisal Difference (nats)", font_size=20)),
             margin=dict(l=0, r=0, b=40, t=0),
-            legend=dict(title=dict(text="   Legend", font_size=16)),
+            legend=dict(title=dict(text="   Complexity", font_size=16)),
         )
         fig.add_hline(y=0.0, opacity=0.5, line_width=2, line_dash="dash")
         fig.update_traces(meanline_visible=True)
@@ -355,6 +357,13 @@ class BarPlots:
         )
         agg_df["CI"] *= 1.96
 
+        llm_order = (  # Order by biggest gap between subsets.
+            agg_df.groupby(by=[DFCols.LLM.value])["Mean"]
+            .agg(lambda x: x.max() - x.min())
+            .sort_values(ascending=False)
+            .index.values.tolist()
+        )
+
         fig = px.bar(
             data_frame=agg_df,
             x=DFCols.LLM.value,
@@ -362,7 +371,7 @@ class BarPlots:
             color=DFCols.SUBSET.value,
             error_y="CI",
             barmode="group",
-            category_orders=all_category_orders(self.cfg.llms),
+            category_orders=all_category_orders(llm_order),
             template="simple_white",
             width=700,  # default is 700
             height=500,  # default is 500
@@ -371,9 +380,9 @@ class BarPlots:
         fig.update_layout(
             font=dict(family="Times New Roman", weight="bold"),
             xaxis=dict(title=None, tickfont=dict(size=8), tickangle=15),
-            yaxis=dict(title=dict(text=f"Relative Surprisal Difference", font_size=20)),
+            yaxis=dict(title=dict(text=f"Surprisal Difference (nats)", font_size=20)),
             margin=dict(l=0, r=0, b=60, t=0),
-            legend=dict(title=dict(text="   Legend", font_size=16)),
+            legend=dict(title=dict(text="   Complexity", font_size=16)),
         )
         fig.update_traces(opacity=0.8, marker_line_width=2)
         return fig
