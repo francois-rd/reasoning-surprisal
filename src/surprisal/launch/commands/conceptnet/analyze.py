@@ -147,10 +147,9 @@ class PlotSaver:
 
 
 class ViolinPlots:
-    def __init__(self, cfg: Config, main_df: pd.DataFrame, analysis_df: pd.DataFrame):
+    def __init__(self, cfg: Config, main_df: pd.DataFrame):
         self.cfg = cfg
         self.df = main_df
-        self.analysis_df = analysis_df
 
     def run(self, saver: PlotSaver) -> None:
         for file_ids, fig in self._do_run().items():
@@ -369,8 +368,7 @@ class ConceptNetAnalyze:
             self._save_analysis(nickname, analysis_df, analysis_summary)
             if self.cfg.create_violin_plots:
                 self.print("    Building violin plots...")
-                saver = PlotSaver(self.path, self.cfg, nickname)
-                ViolinPlots(self.cfg, df, analysis_df=analysis_df).run(saver)
+                ViolinPlots(self.cfg, df).run(PlotSaver(self.path, self.cfg, nickname))
                 self.print("    Done.")
         self.print("Building collective bar plots...")
         bar_plots.run(PlotSaver(self.path, self.cfg, nickname=None))
