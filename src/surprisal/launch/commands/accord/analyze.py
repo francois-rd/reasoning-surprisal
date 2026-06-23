@@ -345,7 +345,8 @@ class BarPlots:
         df = pd.concat([self._prepare(df) for df in self.dfs])
         saver.save(file_ids=("bar",), fig=self._make_plot(df))
 
-    def _make_plot(self, df: pd.DataFrame) -> go.Figure:
+    @staticmethod
+    def _make_plot(df: pd.DataFrame) -> go.Figure:
         # Aggregate raw data.
         agg_df = (
             df.groupby(by=[DFCols.SUBSET.value, DFCols.LLM.value], observed=True)
