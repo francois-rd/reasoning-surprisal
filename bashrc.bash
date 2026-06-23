@@ -43,6 +43,7 @@ cnet.analyze
 accord.make.prompts
 accord.infer
 accord.postprocess
+accord.analyze
 test.launch
 test.accord.loader
 " launch

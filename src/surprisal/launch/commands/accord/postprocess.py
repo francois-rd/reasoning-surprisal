@@ -40,6 +40,7 @@ class DFCols(Enum):
     ACCORD_ID = "AccordID"
     CSQA_ID = "CsqaID"
     LLM = "LLM"
+    CONDITION = "CONDITION"
 
     # Factors.
     IS_FACTUAL = "IsFactual"

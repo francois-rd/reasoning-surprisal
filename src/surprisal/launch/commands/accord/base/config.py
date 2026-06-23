@@ -120,17 +120,14 @@ class Config:
     def llm_output_dir(root: str, nickname: Nickname) -> str:
         return str(os.path.join(root, "output", nickname))
 
-    @staticmethod
-    def postprocess_dir(root: str) -> str:
-        return str(os.path.join(root, "postprocess"))
+    def postprocess_dir(self, root: str) -> str:
+        return str(os.path.join(root, "postprocess", self.aggregator.value))
 
-    @staticmethod
-    def analysis_dir(root: str) -> str:
-        return str(os.path.join(root, "analysis"))
+    def analysis_dir(self, root: str) -> str:
+        return str(os.path.join(root, "analysis", self.aggregator.value))
 
-    @staticmethod
-    def plots_dir(root: str) -> str:
-        return str(os.path.join(root, "plots"))
+    def plots_dir(self, root: str) -> str:
+        return str(os.path.join(root, "plots", self.aggregator.value))
 
 
 class AccordLoader:
