@@ -21,7 +21,7 @@ from .base import Config
 from .postprocess import DFCols
 
 
-def all_category_orders(llm_order: list[str]) -> dict[str, list]:
+def all_category_orders(llm_order: list[str] | None = None) -> dict[str, list]:
     return {
         DFCols.RELATION_TYPE.value: [
             "AtLocation",
@@ -31,7 +31,7 @@ def all_category_orders(llm_order: list[str]) -> dict[str, list]:
             "UsedFor",
             "HasPrerequisite",
         ],
-        DFCols.LLM.value: llm_order.copy(),
+        DFCols.LLM.value: [] if llm_order is None else llm_order.copy(),
     }
 
 
@@ -162,13 +162,14 @@ class ViolinPlots:
             plots[(variant_id,)] = self._make_plot(group_df)
         return plots
 
-    def _make_plot(self, df: pd.DataFrame) -> go.Figure:
+    @staticmethod
+    def _make_plot(df: pd.DataFrame) -> go.Figure:
         fig = px.violin(
             data_frame=df,
             y=DFCols.SURPRISAL.value,
             color=DFCols.RELATION_TYPE.value,
             box=True,
-            category_orders=all_category_orders(self.cfg.llms),
+            category_orders=all_category_orders(),
             template="simple_white",
             width=700,  # default is 700
             height=500,  # default is 500
@@ -181,9 +182,9 @@ class ViolinPlots:
                 showticklabels=False,
                 ticklen=0,
             ),
-            yaxis=dict(title=dict(text=f"Relative Surprisal Difference", font_size=20)),
+            yaxis=dict(title=dict(text=f"Surprisal Difference (nats)", font_size=20)),
             margin=dict(l=0, r=0, b=40, t=0),
-            legend=dict(title=dict(text="   Legend", font_size=16)),
+            legend=dict(title=dict(text="   Reasoning Skill", font_size=16)),
         )
         fig.add_hline(y=0.0, opacity=0.5, line_width=2, line_dash="dash")
         fig.update_traces(meanline_visible=True)
@@ -255,7 +256,8 @@ class BarPlots:
             plots[(variant_id,)] = self._make_plot(group_df)
         return plots
 
-    def _make_plot(self, df: pd.DataFrame) -> go.Figure:
+    @staticmethod
+    def _make_plot(df: pd.DataFrame) -> go.Figure:
         # Aggregate raw data.
         agg_df = (
             df.groupby(by=[DFCols.RELATION_TYPE.value, DFCols.LLM.value])
@@ -267,6 +269,9 @@ class BarPlots:
         )
         agg_df["CI"] *= 1.96
 
+        llm_means = df.groupby(by=[DFCols.LLM.value])[DFCols.SURPRISAL.value].mean()
+        llm_order = llm_means.sort_values(ascending=False).index.values.tolist()
+
         fig = px.bar(
             data_frame=agg_df,
             x=DFCols.LLM.value,
@@ -274,7 +279,7 @@ class BarPlots:
             color=DFCols.RELATION_TYPE.value,
             error_y="CI",
             barmode="group",
-            category_orders=all_category_orders(self.cfg.llms),
+            category_orders=all_category_orders(llm_order),
             template="simple_white",
             width=700,  # default is 700
             height=500,  # default is 500
@@ -283,9 +288,9 @@ class BarPlots:
         fig.update_layout(
             font=dict(family="Times New Roman", weight="bold"),
             xaxis=dict(title=None, tickfont=dict(size=8), tickangle=15),
-            yaxis=dict(title=dict(text=f"Relative Surprisal Difference", font_size=20)),
+            yaxis=dict(title=dict(text=f"Surprisal Difference (nats)", font_size=20)),
             margin=dict(l=0, r=0, b=60, t=0),
-            legend=dict(title=dict(text="   Legend", font_size=16)),
+            legend=dict(title=dict(text="   Reasoning Skill", font_size=16)),
         )
         fig.update_traces(opacity=0.8, marker_line_width=2)
         return fig
