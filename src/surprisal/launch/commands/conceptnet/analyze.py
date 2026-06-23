@@ -93,6 +93,7 @@ class Analyze:
     @staticmethod
     def _post_hoc_tests(variant_ids, relation_types, result) -> pd.DataFrame:
         data = {}
+        v_id_key, r_key = DFCols.VARIANT_ID.value, DFCols.RELATION_TYPE.value
         for relation in relation_types:
             for variant in variant_ids:
                 # We have some random effects variables, but this matrix should
@@ -103,12 +104,12 @@ class Analyze:
                 r_matrix = np.zeros((1, result.k_fe))
 
                 # Main effect.
-                main_index = result.params.index.get_loc(f"C(VariantID)[T.{variant}]")
+                main_index = result.params.index.get_loc(f"C({v_id_key})[T.{variant}]")
                 r_matrix[0, main_index] = 1
                 # For non-reference relation type: main effect + interaction
                 if relation != relation_types[0]:
                     interaction_index = result.params.index.get_loc(
-                        f"C(VariantID)[T.{variant}]:C(RelationType)[T.{relation}]"
+                        f"C({v_id_key})[T.{variant}]:C({r_key})[T.{relation}]"
                     )
                     r_matrix[0, interaction_index] = 1
                 test_result = result.t_test(r_matrix, use_t=True)
