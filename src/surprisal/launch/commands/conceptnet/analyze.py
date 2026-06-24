@@ -9,15 +9,17 @@ import plotly.express as px
 import pandas as pd
 import numpy as np
 
-from ....llms import Nickname, flatten
+from ....llms import Inference, Nickname, flatten
 from ....io import (
     ConditionalPrinter,
     PathConfig,
     ensure_path,
     walk_files,
+    load_dataclass_jsonl,
 )
 
-from .base import Config
+from .base import Config, Triplet, VariantID
+from .infer import AdditionalDataFields
 from .postprocess import DFCols
 
 
@@ -120,6 +122,44 @@ class Analyze:
         return pd.DataFrame(data)
 
 
+def compute_diffs(cfg: Config, df: pd.DataFrame) -> pd.DataFrame:
+    v_id_key = DFCols.VARIANT_ID.value
+    g_id_key = DFCols.GROUP_ID.value
+    s_key = DFCols.SURPRISAL.value
+
+    # Split treatments from control.
+    df_control = df[df[v_id_key] == cfg.factual_variant_id].copy()
+    df_treatments = df[df[v_id_key] != cfg.factual_variant_id].copy()
+
+    # Merge treatments with control on GroupID.
+    df_merged = df_treatments.merge(
+        df_control[[g_id_key, s_key]],
+        on=g_id_key,
+        suffixes=("_treat", "_control"),
+        how="inner",  # Keeps only subjects that have both control and treatment.
+    )
+
+    # Calculate paired differences.
+    variant_ids = cfg.collate_variants.copy()
+    variant_ids.remove(cfg.factual_variant_id)
+    for variant_id in variant_ids:
+        df_merged[f"diff_{variant_id}"] = df_merged.apply(
+            lambda row: (
+                row[f"{s_key}_treat"] - row[f"{s_key}_control"]
+                if row[v_id_key] == variant_id
+                else None
+            ),
+            axis=1,
+        )
+
+    # Sum across columns to merge. Works because NaN + value = value.
+    diff_cols = [f"diff_{v_id}" for v_id in variant_ids]
+    df_merged[s_key] = df_merged[diff_cols].sum(axis=1)
+
+    # Drop intermediary calculation columns.
+    return df_merged.drop(columns=[f"{s_key}_treat", f"{s_key}_control"] + diff_cols)
+
+
 class PlotSaver:
     def __init__(self, path: PathConfig, cfg: Config, nickname: Nickname | None):
         self.path = path
@@ -146,6 +186,69 @@ class PlotSaver:
             pass
 
 
+class DiffOrdering:
+    def __init__(self, path: PathConfig, cfg: Config, main_df: pd.DataFrame):
+        self.path = path
+        self.cfg = cfg
+        self.df = main_df
+
+    def run(self, nickname: Nickname) -> None:
+        # Compute surprisal differences for variants relative to factual.
+        # Load source terms, factual terms, and non-factual terms.
+        # Merge on Variant ID and Group ID.
+        df = pd.merge(
+            compute_diffs(self.cfg, self.df),
+            self._load_sources_and_targets(nickname),
+            on=[DFCols.VARIANT_ID.value, DFCols.GROUP_ID.value],
+            how="inner",
+        )
+
+        # Sort first by Variant ID, then by Relation Type, and finally by surprisal
+        # differences. Then, rename Surprisal to the more accurate SurprisalDiff.
+        df = df.sort_values(
+            by=[
+                DFCols.VARIANT_ID.value,
+                DFCols.RELATION_TYPE.value,
+                DFCols.SURPRISAL.value,
+            ],
+            ascending=[True, True, False],
+        ).rename(columns={DFCols.SURPRISAL.value: "SurprisalDiff"})
+
+        out_dir = os.path.join(self.cfg.analysis_dir(self.path.cnet_exp_dir), nickname)
+        out_file = ensure_path(os.path.join(out_dir, "diff_ordered.csv"))
+        df.to_csv(out_file, index=False)
+
+    def _load_sources_and_targets(self, nickname: Nickname):
+        f_data, nf_data = {}, {}
+        nickname = flatten(nickname)
+        llm_output_dir = self.cfg.llm_output_dir(self.path.cnet_exp_dir, nickname)
+        for walk in walk_files(llm_output_dir):
+            inference_path, variant_id = walk.path, walk.no_ext()
+            if self._skip(variant_id):
+                continue
+            data = f_data if variant_id == self.cfg.factual_variant_id else nf_data
+            for inference in load_dataclass_jsonl(inference_path, t=Inference):
+                group_id = inference.prompt_data.group_id
+                triplet_key = AdditionalDataFields.TRIPLET.value
+                triplet = Triplet(**inference.prompt_data.additional_data[triplet_key])
+                if variant_id == self.cfg.factual_variant_id:
+                    data.setdefault(DFCols.GROUP_ID.value, []).append(group_id)
+                    data.setdefault("Source", []).append(triplet.source)
+                    data.setdefault("FactualTarget", []).append(triplet.target)
+                else:
+                    data.setdefault(DFCols.VARIANT_ID.value, []).append(variant_id)
+                    data.setdefault(DFCols.GROUP_ID.value, []).append(group_id)
+                    data.setdefault("NonFactualTarget", []).append(triplet.target)
+        f_df, nf_df = pd.DataFrame(f_data), pd.DataFrame(nf_data)
+        return pd.merge(f_df, nf_df, on=DFCols.GROUP_ID.value, how="inner")
+
+    def _skip(self, test_variant_id: VariantID) -> bool:
+        for variant_id in self.cfg.collate_variants:
+            if test_variant_id == variant_id:
+                return False
+        return True
+
+
 class ViolinPlots:
     def __init__(self, cfg: Config, main_df: pd.DataFrame):
         self.cfg = cfg
@@ -156,7 +259,7 @@ class ViolinPlots:
             saver.save(dir_ids=("violin",), file_ids=file_ids, fig=fig)
 
     def _do_run(self) -> dict[tuple, go.Figure]:
-        df = self._prepare(self.df)
+        df = compute_diffs(self.cfg, self.df)
         plots, v_id_key = {}, DFCols.VARIANT_ID.value
         for variant_id, group_df in df.groupby(by=v_id_key, observed=True):
             plots[(variant_id,)] = self._make_plot(group_df)
@@ -190,45 +293,6 @@ class ViolinPlots:
         fig.update_traces(meanline_visible=True)
         return fig
 
-    def _prepare(self, df: pd.DataFrame) -> pd.DataFrame:
-        v_id_key = DFCols.VARIANT_ID.value
-        g_id_key = DFCols.GROUP_ID.value
-        s_key = DFCols.SURPRISAL.value
-
-        # Split treatments from control.
-        df_control = df[df[v_id_key] == self.cfg.factual_variant_id].copy()
-        df_treatments = df[df[v_id_key] != self.cfg.factual_variant_id].copy()
-
-        # Merge treatments with control on GroupID.
-        df_merged = df_treatments.merge(
-            df_control[[g_id_key, s_key]],
-            on=g_id_key,
-            suffixes=("_treat", "_control"),
-            how="inner",  # Keeps only subjects that have both control and treatment.
-        )
-
-        # Calculate paired differences.
-        variant_ids = self.cfg.collate_variants.copy()
-        variant_ids.remove(self.cfg.factual_variant_id)
-        for variant_id in variant_ids:
-            df_merged[f"diff_{variant_id}"] = df_merged.apply(
-                lambda row: (
-                    row[f"{s_key}_treat"] - row[f"{s_key}_control"]
-                    if row[v_id_key] == variant_id
-                    else None
-                ),
-                axis=1,
-            )
-
-        # Sum across columns to merge. Works because NaN + value = value.
-        diff_cols = [f"diff_{v_id}" for v_id in variant_ids]
-        df_merged[s_key] = df_merged[diff_cols].sum(axis=1)
-
-        # Drop intermediary calculation columns.
-        return df_merged.drop(
-            columns=[f"{s_key}_treat", f"{s_key}_control"] + diff_cols
-        )
-
 
 class BarPlots:
     def __init__(self, cfg: Config):
@@ -242,7 +306,7 @@ class BarPlots:
         # Prepare all.
         dfs = []
         for nickname, df in self.dfs.items():
-            df = self._prepare(df)
+            df = compute_diffs(self.cfg, df)
             df[DFCols.LLM.value] = nickname
             dfs.append(df)
 
@@ -295,45 +359,6 @@ class BarPlots:
         fig.update_traces(opacity=0.8, marker_line_width=2)
         return fig
 
-    def _prepare(self, df: pd.DataFrame) -> pd.DataFrame:
-        v_id_key = DFCols.VARIANT_ID.value
-        g_id_key = DFCols.GROUP_ID.value
-        s_key = DFCols.SURPRISAL.value
-
-        # Split treatments from control.
-        df_control = df[df[v_id_key] == self.cfg.factual_variant_id].copy()
-        df_treatments = df[df[v_id_key] != self.cfg.factual_variant_id].copy()
-
-        # Merge treatments with control on GroupID.
-        df_merged = df_treatments.merge(
-            df_control[[g_id_key, s_key]],
-            on=g_id_key,
-            suffixes=("_treat", "_control"),
-            how="inner",  # Keeps only subjects that have both control and treatment.
-        )
-
-        # Calculate paired differences.
-        variant_ids = self.cfg.collate_variants.copy()
-        variant_ids.remove(self.cfg.factual_variant_id)
-        for variant_id in variant_ids:
-            df_merged[f"diff_{variant_id}"] = df_merged.apply(
-                lambda row: (
-                    row[f"{s_key}_treat"] - row[f"{s_key}_control"]
-                    if row[v_id_key] == variant_id
-                    else None
-                ),
-                axis=1,
-            )
-
-        # Sum across columns to merge. Works because NaN + value = value.
-        diff_cols = [f"diff_{v_id}" for v_id in variant_ids]
-        df_merged[s_key] = df_merged[diff_cols].sum(axis=1)
-
-        # Drop intermediary calculation columns.
-        return df_merged.drop(
-            columns=[f"{s_key}_treat", f"{s_key}_control"] + diff_cols
-        )
-
 
 @command(name="cnet.analyze")
 class ConceptNetAnalyze:
@@ -351,9 +376,9 @@ class ConceptNetAnalyze:
     def _save_analysis(
         self, nickname: Nickname, analysis_df: pd.DataFrame, analysis_summary: str
     ) -> None:
-        out_dir = self.cfg.analysis_dir(self.path.cnet_exp_dir)
-        df_file = ensure_path(os.path.join(out_dir, nickname + ".csv"))
-        summary_file = ensure_path(os.path.join(out_dir, nickname + ".txt"))
+        out_dir = os.path.join(self.cfg.analysis_dir(self.path.cnet_exp_dir), nickname)
+        df_file = ensure_path(os.path.join(out_dir, "p_values.csv"))
+        summary_file = ensure_path(os.path.join(out_dir, "mixed_lm.txt"))
         analysis_df.to_csv(df_file, index=False)
         with open(summary_file, "w", encoding="utf-8") as f:
             f.write(analysis_summary)
@@ -371,6 +396,8 @@ class ConceptNetAnalyze:
             self.print("    Running statistical analysis...")
             analysis_df, analysis_summary = Analyze(self.cfg, df).run()
             self._save_analysis(nickname, analysis_df, analysis_summary)
+            self.print("    Ordering surprisal differences...")
+            DiffOrdering(self.path, self.cfg, df).run(nickname)
             if self.cfg.create_violin_plots:
                 self.print("    Building violin plots...")
                 ViolinPlots(self.cfg, df).run(PlotSaver(self.path, self.cfg, nickname))
